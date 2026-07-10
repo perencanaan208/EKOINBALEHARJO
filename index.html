@@ -2,168 +2,64 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0f5132">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>E-Koin UPZISNU Baleharjo</title>
+<meta name="theme-color" content="#0f5132">
+<meta name="robots" content="noindex, nofollow">
 <link rel="icon" href="https://www.gstatic.com/images/branding/product/1x/sheets_48dp.png">
-
 <style>
-  /* ====================================================================
-     KONFIGURASI: ganti nilai GAS_URL di bagian <script> paling bawah
-     kalau suatu saat Anda redeploy Apps Script dan URL /exec berubah.
-     ==================================================================== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; width: 100%; overflow: hidden; background: #0f5132; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; }
 
-  *{box-sizing:border-box;margin:0;padding:0;}
+  #app-frame { position: fixed; top: 0; left: 0; width: 100%; height: 100%; border: none; display: block; }
 
-  html, body{
-    height:100%;
-    /* 100dvh mengatasi masalah address bar Safari/Chrome mobile yang
-       naik-turun dan bikin iframe biasa (100vh) terpotong atau nge-gap */
-    height:100dvh;
-    overflow:hidden;
-    background:#0f5132;
-    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
-    overscroll-behavior:none; /* cegah efek pantul/pull-to-refresh browser di HP */
+  #loader {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #0f5132; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 14px; color: #fff; z-index: 10;
+    transition: opacity 0.3s ease;
   }
-
-  #appFrame{
-    position:fixed;
-    inset:0;
-    width:100%;
-    height:100%;
-    height:100dvh;
-    border:0;
-    display:block;
-    background:#f4f7f5;
-  }
-
-  /* ---------- Loading screen (tampil sampai iframe selesai load) ---------- */
-  #loadingOverlay{
-    position:fixed;inset:0;z-index:10;
-    background:linear-gradient(135deg,#0f5132,#146c43);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    color:#fff;
-    transition:opacity .35s ease;
-  }
-  #loadingOverlay.hide{ opacity:0; pointer-events:none; }
-  .coin-icon{ font-size:42px; margin-bottom:10px; animation:bounce 1.4s ease-in-out infinite; }
-  @keyframes bounce{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-10px);} }
-  .spinner{
-    width:44px;height:44px;border:4px solid rgba(255,255,255,.25);border-top-color:#c9a227;
-    border-radius:50%;animation:spin .9s linear infinite;margin-bottom:14px;
-  }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-  #loadingOverlay p{ font-size:13px; opacity:.9; }
-
-  /* ---------- Tampilan kalau iframe gagal dimuat (mis. offline) ---------- */
-  #errorOverlay{
-    position:fixed;inset:0;z-index:11;display:none;
-    background:#f4f7f5;flex-direction:column;align-items:center;justify-content:center;
-    text-align:center;padding:30px;color:#1c2b24;
-  }
-  #errorOverlay.show{ display:flex; }
-  #errorOverlay .icon{ font-size:48px;margin-bottom:14px; }
-  #errorOverlay h2{ font-size:17px;margin-bottom:8px;color:#0f5132; }
-  #errorOverlay p{ font-size:13.5px;color:#6b7c74;margin-bottom:20px;max-width:320px; }
-  #errorOverlay button{
-    background:#0f5132;color:#fff;border:none;padding:12px 22px;border-radius:10px;
-    font-size:14px;font-weight:600;cursor:pointer;
-  }
-  #errorOverlay a{
-    margin-top:10px;font-size:12.5px;color:#146c43;text-decoration:underline;
-  }  /* ---------- Tombol "buka langsung" - selalu ada, jaga-jaga iframe bermasalah ---------- */
-  #directPill{
-    position:fixed;bottom:14px;right:14px;z-index:20;
-    background:rgba(15,81,50,0.92);color:#fff;font-size:11.5px;font-weight:600;
-    padding:8px 14px;border-radius:20px;text-decoration:none;
-    box-shadow:0 2px 10px rgba(0,0,0,0.25);
-    display:flex;align-items:center;gap:6px;
-  }
+  #loader.hide { opacity: 0; pointer-events: none; }
+  .coin-icon { font-size: 40px; }
+  .spinner { width: 42px; height: 42px; border: 4px solid rgba(255,255,255,0.25); border-top-color: #c9a227; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loader p { font-size: 14px; opacity: 0.85; }
 </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
-  <div class="coin-icon">🪙</div>
-  <div class="spinner"></div>
-  <p>Memuat E-Koin UPZISNU...</p>
-</div>
+  <div id="loader">
+    <div class="coin-icon">🪙</div>
+    <div class="spinner"></div>
+    <p id="loaderText">Memuat E-Koin UPZISNU Baleharjo...</p>
+  </div>
 
-<div id="errorOverlay">
-  <div class="icon">⚠️</div>
-  <h2>Gagal memuat aplikasi</h2>
-  <p>Periksa koneksi internet Anda, lalu coba lagi. Jika masalah berlanjut, buka langsung lewat tautan di bawah.</p>
-  <button onclick="reloadApp()">Coba Lagi</button>
-  <a id="directLink" href="#" target="_blank" rel="noopener">Buka langsung di tab baru</a>
-</div>
-
-<iframe id="appFrame" title="E-Koin UPZISNU Baleharjo" allow="clipboard-write"></iframe>
-
-<a id="directPill" href="#" target="_top">🔗 Buka versi langsung</a>
+  <iframe id="app-frame" title="E-Koin UPZISNU Baleharjo" allow="clipboard-write"></iframe>
 
 <script>
-  // ===================================================================
-  // GANTI URL INI kalau Apps Script di-deploy ulang sebagai versi baru
-  // dengan URL /exec yang berbeda. URL saat ini adalah deployment aktif
-  // aplikasi E-Koin UPZISNU.
-  // ===================================================================
-  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y/exec';
+  var GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y/exec";
+  var TIMEOUT_MS = 10000; // kalau belum kelar dalam 10 detik, otomatis reload
 
-  var frame = document.getElementById('appFrame');
-  var loadingOverlay = document.getElementById('loadingOverlay');
-  var errorOverlay = document.getElementById('errorOverlay');
-  var directLink = document.getElementById('directLink');
-  var directPill = document.getElementById('directPill');
-  var loadTimeout;
+  var frame = document.getElementById('app-frame');
+  var loader = document.getElementById('loader');
+  var loaderText = document.getElementById('loaderText');
 
-  directLink.href = GAS_URL;
-  directPill.href = GAS_URL;
+  frame.src = GAS_WEB_APP_URL;
 
-  function startLoad(){
-    errorOverlay.classList.remove('show');
-    loadingOverlay.classList.remove('hide');
-    frame.src = GAS_URL;
-
-    // Kalau lebih dari 15 detik belum juga selesai load, anggap gagal
-    // (mis. tidak ada koneksi internet).
-    clearTimeout(loadTimeout);
-    loadTimeout = setTimeout(function(){
-      errorOverlay.classList.add('show');
-      loadingOverlay.classList.add('hide');
-    }, 15000);
-  }
-
-  frame.addEventListener('load', function(){
-    clearTimeout(loadTimeout);
-    loadingOverlay.classList.add('hide');
+  var loaded = false;
+  frame.addEventListener('load', function () {
+    loaded = true;
+    loader.classList.add('hide');
+    setTimeout(function () { loader.style.display = 'none'; }, 350);
   });
 
-  frame.addEventListener('error', function(){
-    clearTimeout(loadTimeout);
-    errorOverlay.classList.add('show');
-    loadingOverlay.classList.add('hide');
-  });
-
-  function reloadApp(){
-    startLoad();
-  }
-
-  // Perbaikan tinggi viewport untuk browser lama yang belum dukung 100dvh
-  function fixViewportHeight(){
-    if(!CSS.supports('height', '100dvh')){
-      var vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', vh + 'px');
-      frame.style.height = window.innerHeight + 'px';
+  // Kalau gagal terhubung dalam batas waktu, coba lagi otomatis (reload halaman)
+  setTimeout(function () {
+    if (!loaded) {
+      loaderText.textContent = 'Menghubungkan ulang...';
+      setTimeout(function () { window.location.reload(); }, 600);
     }
-  }
-  window.addEventListener('resize', fixViewportHeight);
-  window.addEventListener('orientationchange', fixViewportHeight);
-  fixViewportHeight();
-
-  startLoad();
+  }, TIMEOUT_MS);
 </script>
 
 </body>
