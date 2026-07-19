@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#146c43"/>
+      <stop offset="55%" stop-color="#0f5132"/>
+      <stop offset="100%" stop-color="#0a3a24"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7edd0"/>
+      <stop offset="45%" stop-color="#e6c869"/>
+      <stop offset="100%" stop-color="#c9a227"/>
+    </linearGradient>
+    <linearGradient id="coinInner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c9a227"/>
+      <stop offset="100%" stop-color="#a5810e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background: rounded square (superellipse-style) -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- subtle inner highlight ring for depth -->
+  <rect x="14" y="14" width="484" height="484" rx="100" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="4"/>
+
+  <!-- Coin -->
+  <g transform="translate(256,192)">
+    <circle r="98" fill="url(#coin)"/>
+    <circle r="98" fill="none" stroke="#a5810e" stroke-width="4" stroke-opacity="0.5"/>
+    <circle r="76" fill="none" stroke="#0f5132" stroke-width="5" stroke-opacity="0.55" stroke-dasharray="6 8"/>
+    <text x="0" y="30" font-family="Georgia, 'Times New Roman', serif" font-size="92" font-weight="700" fill="url(#coinInner)" text-anchor="middle">Rp</text>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="256" y="368" font-family="Verdana, Arial, sans-serif" font-size="70" font-weight="900" letter-spacing="2" fill="#ffffff" text-anchor="middle">E-KOIN</text>
+  <text x="256" y="418" font-family="Verdana, Arial, sans-serif" font-size="34" font-weight="700" letter-spacing="6" fill="#e6c869" text-anchor="middle">BALEHARJO</text>
+</svg>
