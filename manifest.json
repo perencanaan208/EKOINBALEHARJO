@@ -1,0 +1,29 @@
+{
+  "name": "E-Koin UPZISNU Baleharjo",
+  "short_name": "E-Koin Baleharjo",
+  "description": "Media Transparansi Pengelolaan Dana Keuangan Digital - UPZISNU CARE-LAZISNU Desa Baleharjo",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f5132",
+  "theme_color": "#0f5132",
+  "icons": [
+    {
+      "src": "ekoin-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ekoin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ekoin-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
