@@ -52,9 +52,11 @@ module.exports = async function handler(req, res) {
     }
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', 'inline');
     // Jangan di-cache supaya update terbaru dari GAS selalu langsung tampil.
     res.setHeader('Cache-Control', 'no-store, max-age=0');
-    res.status(200).send(html);
+    res.status(200);
+    res.end(html);
   } catch (err) {
     res.status(500).send('Terjadi kesalahan saat memuat halaman: ' + (err && err.message ? err.message : String(err)));
   }
