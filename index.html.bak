@@ -195,6 +195,26 @@ input,select{font-family:inherit;}
   0%{ transform:translateX(0); }
   100%{ transform:translateX(-100%); }
 }
+/* Banner sapaan "Selamat Bertugas" — hanya tampil untuk akun yang login
+   (Admin/Petugas/Bendahara/Sekretaris/dll), TIDAK untuk Mode Publik.
+   Diposisikan di kolom main-content (bukan di topbar) supaya tetap rapi &
+   tidak kepotong di layar HP sekecil apapun; teks boleh membungkus 2 baris
+   di layar sempit tanpa merusak layout. */
+.greeting-banner{
+  display:none;align-items:center;gap:10px;
+  background:linear-gradient(135deg,var(--hijau-tua) 0%,var(--hijau) 100%);
+  color:#fff;padding:12px 16px;border-radius:12px;margin-bottom:16px;
+  box-shadow:0 2px 8px rgba(15,81,50,0.18);
+}
+.greeting-banner.show{display:flex;}
+.greeting-banner-icon{font-size:20px;flex-shrink:0;line-height:1;}
+.greeting-banner-text{font-size:13.5px;font-weight:600;line-height:1.4;}
+.greeting-banner-text b{color:var(--emas);}
+@media (max-width:600px){
+  .greeting-banner{padding:10px 12px;border-radius:10px;margin-bottom:12px;}
+  .greeting-banner-icon{font-size:18px;}
+  .greeting-banner-text{font-size:12.5px;}
+}
 /* Sidebar sekarang dibuat SEWARNA topbar (hijau tua bergradasi), supaya
    terlihat menyatu sebagai satu kesatuan header+sidebar hijau — item aktif
    dibedakan pakai hijau yang lebih terang (var(--hijau)), sub-menu aktif
@@ -738,6 +758,14 @@ input[type=number]{
         <div class="running-text-viewport">
           <span class="running-text-track" id="runningTextTrack"></span>
         </div>
+      </div>
+
+      <!-- Banner sapaan "Selamat Bertugas" — hanya untuk akun yang login
+           (Admin/Petugas/Bendahara/Sekretaris/dll), disembunyikan otomatis
+           di Mode Publik. Isinya diisi via JS oleh renderGreetingBanner_(). -->
+      <div class="greeting-banner" id="greetingBanner">
+        <span class="greeting-banner-icon">👋</span>
+        <span class="greeting-banner-text" id="greetingBannerText"></span>
       </div>
 
       <!-- ===== VIEW: DASHBOARD ===== -->
@@ -2900,6 +2928,7 @@ function renderTopbarUser_(){
     roleEl.className = 'role-badge role-publik';
     if(logoutBtn) logoutBtn.style.display = 'none';
     if(loginBtn) loginBtn.style.display = '';
+    renderGreetingBanner_();
     return;
   }
 
@@ -2909,6 +2938,42 @@ function renderTopbarUser_(){
   roleEl.className = 'role-badge ' + cls;
   if(logoutBtn) logoutBtn.style.display = '';
   if(loginBtn) loginBtn.style.display = 'none';
+  renderGreetingBanner_();
+}
+
+// Label sapaan sesuai role, dibuat lebih "manusiawi" & sesuai konteks
+// aplikasi (mis. Petugas -> "Petugas Koin") daripada sekadar teks Role
+// mentah dari sheet Admin.
+function greetingLabelForRole_(role){
+  var rn = normalizeKeyClient_(role);
+  if(rn === 'admin') return 'Admin';
+  if(rn === 'petugas') return 'Petugas Koin';
+  if(rn === 'bendahara') return 'Bendahara';
+  if(rn === 'sekretaris') return 'Sekretaris';
+  return role || '';
+}
+
+// Menampilkan banner "Selamat Bertugas, {Label} {Nama}!" di atas konten
+// utama — HANYA untuk akun yang login (Admin/Petugas/Bendahara/Sekretaris/
+// role lain), disembunyikan total di Mode Publik supaya tidak membingungkan
+// pengunjung yang belum login. Nama & label menyesuaikan otomatis per akun.
+function renderGreetingBanner_(){
+  var banner = document.getElementById('greetingBanner');
+  var textEl = document.getElementById('greetingBannerText');
+  if(!banner || !textEl) return;
+  if(!STATE.session){ banner.classList.remove('show'); return; }
+
+  var role = STATE.session.role || '';
+  var isPublic = normalizeKeyClient_(role) === 'publik';
+  if(isPublic){
+    banner.classList.remove('show');
+    return;
+  }
+
+  var nama = STATE.session.nama || STATE.session.username || '';
+  var label = greetingLabelForRole_(role);
+  textEl.innerHTML = 'Selamat Bertugas, <b>' + escapeHtml(label) + '</b> ' + escapeHtml(nama) + '!';
+  banner.classList.add('show');
 }
 
 function handleLogout(){
