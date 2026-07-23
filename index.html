@@ -34,5 +34,22 @@
     allow="clipboard-write"
     referrerpolicy="no-referrer-when-downgrade">
   </iframe>
+  <script>
+    // Judul tab & nama file default "Simpan sebagai PDF" ikut judul halaman
+    // PEMBUNGKUS ini (bukan judul di dalam iframe GAS), karena beda origin.
+    // Supaya nama file PDF tetap sesuai isi laporan (mis. "Laporan Kas
+    // UPZISNU Bulan April Tahun 2026") walau dibuka lewat Vercel, iframe
+    // GAS mengirim pesan lewat postMessage() tiap kali mau mencetak — kita
+    // dengarkan di sini dan ikut ganti judul halaman pembungkus ini.
+    var JUDUL_ASLI_ = document.title;
+    window.addEventListener('message', function(e){
+      if(!e.data || typeof e.data !== 'object') return;
+      if(e.data.type === 'ekoin_set_title' && e.data.title){
+        document.title = e.data.title;
+      } else if(e.data.type === 'ekoin_reset_title'){
+        document.title = JUDUL_ASLI_;
+      }
+    });
+  </script>
 </body>
 </html>
