@@ -5,15 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>E-Koin UPZISNU Baleharjo</title>
 <!--
+  Ikon aplikasi: favicon tab browser, ikon Home Screen iOS, dan ikon
+  "Buat Pintasan"/"Install" di Android & desktop Chrome. URL gambarnya
+  menunjuk LANGSUNG ke endpoint dinamis di deployment GAS
+  (?action=iconAplikasi) — jadi kalau Admin ganti Ikon Aplikasi lewat
+  Pengaturan di aplikasi (tanpa perlu commit/push apapun ke sini lagi),
+  ikon di sini IKUT BERUBAH otomatis. Manifest-nya sendiri ditulis
+  sebagai data: URI langsung di sini (bukan file manifest.json
+  terpisah) supaya tidak ada file tambahan yang bisa 404/gagal dimuat.
+-->
+<link rel="icon" href="https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-/exec?action=iconAplikasi&v=1.png">
+<link rel="apple-touch-icon" href="https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-/exec?action=iconAplikasi&v=1.png">
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22E-Koin%20UPZISNU%20Baleharjo%22%2C%20%22short_name%22%3A%20%22E-Koin%22%2C%20%22start_url%22%3A%20%22https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-%2Fexec%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%230f5132%22%2C%20%22theme_color%22%3A%20%22%230f5132%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-%2Fexec%3Faction%3DiconAplikasi%26v%3D1.png%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image%2Fpng%22%7D%2C%20%7B%22src%22%3A%20%22https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-%2Fexec%3Faction%3DiconAplikasi%26v%3D1.png%22%2C%20%22sizes%22%3A%20%22512x512%22%2C%20%22type%22%3A%20%22image%2Fpng%22%7D%5D%7D">
+<meta name="theme-color" content="#0f5132">
+<!--
   MODE PENAMPIL (iframe) — SENGAJA dibuat sesederhana mungkin.
   Halaman ini TIDAK menyimpan salinan tampilan aplikasi sama sekali; ia cuma
   menampilkan langsung isi dari deployment GAS lewat <iframe>. Jadi:
   - Update apapun (menu, fitur, tampilan) cukup dilakukan di GAS
     (Index.html) → Deploy → New Version. Vercel otomatis ikut berubah,
     tidak perlu commit/push apapun ke GitHub lagi.
-  - Konsekuensinya: ikon PWA & "Add to Home Screen" pakai ikon bawaan
-    browser (bukan ikon custom E-Koin), karena manifest.json/ikon custom
-    tidak dipakai lagi di mode ini.
+  - Ikon PWA & "Add to Home Screen"/"Buat Pintasan" sudah pakai Ikon
+    Aplikasi custom (bukan ikon bawaan browser lagi) — lihat tag <link>
+    rel="icon"/"apple-touch-icon"/"manifest" di atas, yang menunjuk ke
+    endpoint dinamis di GAS. Kalau Ikon Aplikasi diganti lewat Pengaturan
+    di dalam aplikasi, ikon di sini ikut berubah otomatis TANPA perlu
+    commit/push apapun ke sini lagi.
   - GANTI URL di bawah ini kalau suatu saat deployment GAS dibuat versi/URL
     baru.
 -->
@@ -34,22 +51,5 @@
     allow="clipboard-write"
     referrerpolicy="no-referrer-when-downgrade">
   </iframe>
-  <script>
-    // Judul tab & nama file default "Simpan sebagai PDF" ikut judul halaman
-    // PEMBUNGKUS ini (bukan judul di dalam iframe GAS), karena beda origin.
-    // Supaya nama file PDF tetap sesuai isi laporan (mis. "Laporan Kas
-    // UPZISNU Bulan April Tahun 2026") walau dibuka lewat Vercel, iframe
-    // GAS mengirim pesan lewat postMessage() tiap kali mau mencetak — kita
-    // dengarkan di sini dan ikut ganti judul halaman pembungkus ini.
-    var JUDUL_ASLI_ = document.title;
-    window.addEventListener('message', function(e){
-      if(!e.data || typeof e.data !== 'object') return;
-      if(e.data.type === 'ekoin_set_title' && e.data.title){
-        document.title = e.data.title;
-      } else if(e.data.type === 'ekoin_reset_title'){
-        document.title = JUDUL_ASLI_;
-      }
-    });
-  </script>
 </body>
 </html>
