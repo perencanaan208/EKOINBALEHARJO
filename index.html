@@ -6,18 +6,62 @@
 <title>E-Koin UPZISNU Baleharjo</title>
 <!--
   Ikon aplikasi: favicon tab browser, ikon Home Screen iOS, dan ikon
-  "Buat Pintasan"/"Install" di Android & desktop Chrome. URL gambarnya
-  menunjuk LANGSUNG ke endpoint dinamis di deployment GAS
-  (?action=iconAplikasi) — jadi kalau Admin ganti Ikon Aplikasi lewat
-  Pengaturan di aplikasi (tanpa perlu commit/push apapun ke sini lagi),
-  ikon di sini IKUT BERUBAH otomatis. Manifest-nya sendiri ditulis
-  sebagai data: URI langsung di sini (bukan file manifest.json
-  terpisah) supaya tidak ada file tambahan yang bisa 404/gagal dimuat.
+  "Buat Pintasan"/"Install" di Android & desktop Chrome. Href-nya SENGAJA
+  dikosongkan di sini — begitu halaman ini dimuat, script kecil di bawah
+  mengambil URL Ikon Aplikasi (yang disimpan di Google Drive lewat
+  Pengaturan > Ikon Aplikasi di dalam aplikasi) langsung dari server GAS,
+  lalu mengisi href-nya. Jadi kalau Admin ganti ikon lewat Pengaturan,
+  ikon di sini IKUT BERUBAH otomatis — TIDAK perlu commit/push apapun ke
+  sini lagi.
 -->
-<link rel="icon" href="https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-/exec?action=iconAplikasi&v=1.png">
-<link rel="apple-touch-icon" href="https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-/exec?action=iconAplikasi&v=1.png">
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22E-Koin%20UPZISNU%20Baleharjo%22%2C%20%22short_name%22%3A%20%22E-Koin%22%2C%20%22start_url%22%3A%20%22https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-%2Fexec%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%230f5132%22%2C%20%22theme_color%22%3A%20%22%230f5132%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-%2Fexec%3Faction%3DiconAplikasi%26v%3D1.png%22%2C%20%22sizes%22%3A%20%22192x192%22%2C%20%22type%22%3A%20%22image%2Fpng%22%7D%2C%20%7B%22src%22%3A%20%22https%3A%2F%2Fscript.google.com%2Fmacros%2Fs%2FAKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-%2Fexec%3Faction%3DiconAplikasi%26v%3D1.png%22%2C%20%22sizes%22%3A%20%22512x512%22%2C%20%22type%22%3A%20%22image%2Fpng%22%7D%5D%7D">
+<link rel="icon" id="appFaviconLink" href="">
+<link rel="apple-touch-icon" id="appTouchIconLink" href="">
+<link rel="manifest" id="appManifestLink" href="">
 <meta name="theme-color" content="#0f5132">
+<script>
+(function(){
+  // GANTI URL di sini juga kalau suatu saat deployment GAS dibuat versi/URL
+  // baru (harus SAMA dengan src iframe di bawah).
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-/exec';
+
+  // GET biasa (bukan POST) — dijamin tidak kena masalah CORS preflight sama
+  // sekali, karena GET tanpa header khusus dianggap "simple request" oleh
+  // browser. Endpoint ?rpc=getIkonAplikasi cuma mengembalikan JSON kecil
+  // berisi URL Ikon Aplikasi terbaru (bukan file gambar), lihat doGet di
+  // Code.gs.
+  fetch(GAS_URL + '?rpc=getIkonAplikasi')
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      var url = res && res.success && res.data && res.data.iconUrl;
+      if(!url) return; // belum ada ikon custom diupload — biarkan ikon bawaan browser
+
+      document.getElementById('appFaviconLink').setAttribute('href', url);
+      document.getElementById('appTouchIconLink').setAttribute('href', url);
+
+      // Web App Manifest dibuat dinamis lewat Blob URL (bukan file
+      // manifest.json terpisah) — supaya ikon "Add to Home Screen"/"Install
+      // App" di Android Chrome & desktop Chrome ikut memakai ikon terbaru.
+      var manifest = {
+        name: 'E-Koin UPZISNU Baleharjo',
+        short_name: 'E-Koin',
+        start_url: GAS_URL,
+        display: 'standalone',
+        background_color: '#0f5132',
+        theme_color: '#0f5132',
+        icons: [
+          { src: url, sizes: '192x192', type: 'image/png' },
+          { src: url, sizes: '512x512', type: 'image/png' }
+        ]
+      };
+      var blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      document.getElementById('appManifestLink').setAttribute('href', URL.createObjectURL(blob));
+    })
+    .catch(function(){
+      // Diam-diam gagal (mis. offline) — biarkan ikon bawaan browser, jangan
+      // sampai mengganggu iframe utama di bawah yang tetap harus tampil.
+    });
+})();
+</script>
 <!--
   MODE PENAMPIL (iframe) — SENGAJA dibuat sesederhana mungkin.
   Halaman ini TIDAK menyimpan salinan tampilan aplikasi sama sekali; ia cuma
@@ -26,10 +70,10 @@
     (Index.html) → Deploy → New Version. Vercel otomatis ikut berubah,
     tidak perlu commit/push apapun ke GitHub lagi.
   - Ikon PWA & "Add to Home Screen"/"Buat Pintasan" sudah pakai Ikon
-    Aplikasi custom (bukan ikon bawaan browser lagi) — lihat tag <link>
-    rel="icon"/"apple-touch-icon"/"manifest" di atas, yang menunjuk ke
-    endpoint dinamis di GAS. Kalau Ikon Aplikasi diganti lewat Pengaturan
-    di dalam aplikasi, ikon di sini ikut berubah otomatis TANPA perlu
+    Aplikasi custom (bukan ikon bawaan browser lagi) — diambil lewat
+    script kecil di <head> yang fetch ke server GAS, BUKAN file yang
+    di-commit ke sini. Kalau Ikon Aplikasi diganti lewat Pengaturan di
+    dalam aplikasi, ikon di sini ikut berubah otomatis TANPA perlu
     commit/push apapun ke sini lagi.
   - GANTI URL di bawah ini kalau suatu saat deployment GAS dibuat versi/URL
     baru.
