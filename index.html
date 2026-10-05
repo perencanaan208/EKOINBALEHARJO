@@ -28,7 +28,9 @@
   // sekali, karena GET tanpa header khusus dianggap "simple request" oleh
   // browser. Endpoint ?rpc=getIkonAplikasi cuma mengembalikan JSON kecil
   // berisi URL Ikon Aplikasi terbaru (bukan file gambar), lihat doGet di
-  // Code.gs.
+  // Code.gs. Endpoint ini sudah di-cache di sisi server (CacheService,
+  // 10 menit) supaya panggilan ini cepat & tidak ikut menahan munculnya
+  // splash "Selamat Datang" di bawah.
   fetch(GAS_URL + '?rpc=getIkonAplikasi')
     .then(function(r){ return r.json(); })
     .then(function(res){
@@ -86,14 +88,86 @@
   iframe{
     border:0; display:block; width:100%; height:100%;
   }
+  /*
+    SPLASH "SELAMAT DATANG" -- SEBELUMNYA halaman ini cuma <iframe> polos
+    dengan background hijau solid, tanpa apa-apa lagi. Begitu dibuka,
+    halaman wrapper ini sendiri (statis, di Vercel) tampil SANGAT cepat,
+    tapi isi <iframe>-nya (aplikasi GAS yang sesungguhnya) butuh waktu
+    untuk dimuat dari server Google (apalagi saat "cold start") -- selama
+    jeda itulah yang selama ini terlihat sebagai layar hijau KOSONG (tanpa
+    spinner/teks apapun), terasa seperti macet/lama.
+    Splash di bawah ini SENGAJA dibuat meniru persis tampilan #loadingScreen
+    di dalam aplikasi GAS-nya sendiri (ikon koin, spinner, teks "SELAMAT
+    DATANG..." dengan warna & gradasi yang sama) -- supaya begitu halaman
+    ini dibuka, yang terlihat BUKAN hijau kosong, melainkan LANGSUNG splash
+    "Selamat Datang" yang sama persis dengan yang nanti menyambungnya dari
+    dalam iframe, sehingga transisinya terasa MULUS/menyatu (serasa 1 layar
+    loading yang sama terus, bukan 2 layar loading berbeda yang berganti).
+    Disembunyikan otomatis begitu <iframe> selesai dimuat (lihat <script>
+    di bawah, event 'load' pada iframe) -- event ini TETAP terpicu normal
+    walau iframe-nya beda origin (script.google.com), browser cuma
+    membatasi AKSES ISI iframe lintas-origin, bukan event load-nya.
+  */
+  #wrapperSplash{
+    position:fixed; inset:0; z-index:9999;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:linear-gradient(135deg,#0f5132,#146c43);
+    color:#fff;
+    opacity:1; visibility:visible;
+    transition:opacity .35s ease, visibility .35s ease;
+  }
+  #wrapperSplash.hide{ opacity:0; visibility:hidden; pointer-events:none; }
+  #wrapperSplash .coin-icon{
+    font-size:40px; margin-bottom:8px; animation:wrapperBounce 1.4s ease-in-out infinite;
+    width:92px; height:92px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  @keyframes wrapperBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+  #wrapperSplash .spinner{
+    width:48px; height:48px; border:4px solid rgba(255,255,255,0.25); border-top-color:#c9a227;
+    border-radius:50%; animation:wrapperSpin .9s linear infinite; margin-bottom:16px;
+  }
+  @keyframes wrapperSpin{to{transform:rotate(360deg);}}
+  #wrapperSplash .teks{
+    font-size:15px; font-weight:600; opacity:.95; text-align:center; line-height:1.5; padding:0 20px;
+  }
+  #wrapperSplash .teks b{ font-size:22px; font-weight:800; display:block; }
 </style>
 </head>
 <body>
+  <div id="wrapperSplash">
+    <div class="coin-icon">🪙</div>
+    <div class="spinner"></div>
+    <div class="teks">SELAMAT DATANG DI<br><b>E-KOIN UPZISNU CARE - LAZISNU</b>DESA BALEHARJO</div>
+  </div>
   <iframe
+    id="appFrame"
     src="https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-/exec"
     title="E-Koin UPZISNU Baleharjo"
     allow="clipboard-write"
     referrerpolicy="no-referrer-when-downgrade">
   </iframe>
+  <script>
+  (function(){
+    var splash = document.getElementById('wrapperSplash');
+    var frame = document.getElementById('appFrame');
+    var sudahDisembunyikan = false;
+    function sembunyikanSplash(){
+      if(sudahDisembunyikan) return;
+      sudahDisembunyikan = true;
+      splash.classList.add('hide');
+    }
+    // Jalur utama: begitu dokumen di dalam iframe selesai dimuat (termasuk
+    // kasus aplikasi GAS-nya sendiri sudah sempat menampilkan #loadingScreen
+    // miliknya sendiri dan isi Dashboard/halaman sudah siap), splash wrapper
+    // ini dianggap sudah tidak perlu lagi dan disembunyikan.
+    frame.addEventListener('load', sembunyikanSplash);
+    // Jaga-jaga (fallback): kalau karena suatu hal event 'load' tidak
+    // pernah terpicu (jaringan bermasalah dsb), splash ini jangan sampai
+    // nyangkut selamanya menutupi iframe -- paksa sembunyikan setelah 20
+    // detik, lebih baik terlihat sedikit "gagal" daripada mengunci user
+    // keluar dari aplikasi yang sebenarnya sudah termuat.
+    setTimeout(sembunyikanSplash, 20000);
+  })();
+  </script>
 </body>
 </html>
