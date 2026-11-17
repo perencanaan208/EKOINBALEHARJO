@@ -55,7 +55,7 @@ function status(cls, teks) { var s = document.getElementById('status'); s.classN
       document.getElementById('isi').innerHTML =
         '<h4>Menyatakan Bahwa :</h4><table>' +
           row('Jenis Surat', d.jenis ? 'Surat ' + d.jenis : '') + row('Nomor Surat', d.nomor) + row('Tanggal Surat', tglId(d.tgl)) +
-          row('Perihal', d.perihal) + row('Acara', d.acara) + row('Hari/Tanggal Acara', d.hariTanggalAcara) + row('Tempat', d.tempat) +
+          row('Perihal', d.perihal) + row('Laporan Bulan', d.periode) + row('Acara', d.acara) + row('Hari/Tanggal Acara', d.hariTanggalAcara) + row('Tempat', d.tempat) +
         '</table>' +
         (ttd ? '<h4>Ditandatangani secara elektronik oleh :</h4><ul>' + ttd + '</ul>' : '');
       status('ok', 'Adalah benar dan tercatat dalam database sistem informasi E-Koin UPZISNU Baleharjo.');
