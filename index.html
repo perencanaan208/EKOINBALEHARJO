@@ -34,15 +34,20 @@
   fetch(GAS_URL + '?rpc=getIkonAplikasi')
     .then(function(r){ return r.json(); })
     .then(function(res){
+      // Logo UPZISNU di splash = logo organisasi (yang sama dengan logo di bar atas kiri aplikasi), BUKAN Ikon
+      // Aplikasi. Disimpan di browser supaya pada kunjungan berikutnya logonya SUDAH tampil sejak detik pertama
+      // (tanpa menunggu fetch ini); lihat skrip splash di bawah. Dikerjakan SEBELUM cek ikon di bawah, karena
+      // logo tetap harus tampil walau Ikon Aplikasi custom belum pernah diupload.
+      var logo = res && res.success && res.data && res.data.logoUrl;
+      if(logo){
+        try{ localStorage.setItem('ekoin_splash_logo_org', logo); }catch(e){}
+        if(window.ekoinSetLogoSplash) window.ekoinSetLogoSplash(logo);
+      }
       var url = res && res.success && res.data && res.data.iconUrl;
       if(!url) return; // belum ada ikon custom diupload — biarkan ikon bawaan browser
 
       document.getElementById('appFaviconLink').setAttribute('href', url);
       document.getElementById('appTouchIconLink').setAttribute('href', url);
-      // Logo UPZISNU di splash = Ikon Aplikasi yang sama. Disimpan di browser supaya pada kunjungan berikutnya
-      // logonya SUDAH tampil sejak detik pertama (tanpa menunggu fetch ini); lihat skrip splash di bawah.
-      try{ localStorage.setItem('ekoin_splash_logo', url); }catch(e){}
-      if(window.ekoinSetLogoSplash) window.ekoinSetLogoSplash(url);
 
       // Web App Manifest dibuat dinamis lewat Blob URL (bukan file
       // manifest.json terpisah) — supaya ikon "Add to Home Screen"/"Install
@@ -124,13 +129,14 @@
   #wrapperSplash.hide{ opacity:0; visibility:hidden; pointer-events:none; }
   /* Logo UPZISNU (Ikon Aplikasi) menggantikan ikon koin/rumah bawaan. */
   #wrapperSplash .logo-box{
-    width:112px; height:112px; margin-bottom:18px; flex-shrink:0;
-    display:flex; align-items:center; justify-content:center;
+    width:210px; height:124px; margin-bottom:20px; flex-shrink:0; box-sizing:border-box;
+    padding:12px 16px; border-radius:20px; background:#fff;
+    box-shadow:0 8px 22px rgba(0,0,0,.25);
+    display:none; align-items:center; justify-content:center;
     animation:wrapperBounce 1.8s ease-in-out infinite;
   }
   #wrapperSplash .logo-box img{
-    max-width:100%; max-height:100%; object-fit:contain; display:none;
-    filter:drop-shadow(0 4px 10px rgba(0,0,0,.25));
+    max-width:100%; max-height:100%; object-fit:contain; display:block;
   }
   @keyframes wrapperBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
   #wrapperSplash .teks{
@@ -152,7 +158,7 @@
 </head>
 <body>
   <div id="wrapperSplash">
-    <div class="logo-box"><img id="splashLogo" alt="Logo UPZISNU"></div>
+    <div class="logo-box" id="splashLogoBox"><img id="splashLogo" alt="Logo UPZISNU"></div>
     <div class="teks">SELAMAT DATANG DI<br><b>E-KOIN UPZISNU CARE - LAZISNU</b>DESA BALEHARJO</div>
     <div class="progres" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="splashProgres">
       <div class="persen" id="splashPersen">0%</div>
@@ -181,10 +187,11 @@
     // --- Logo UPZISNU: dari kunjungan sebelumnya (langsung) atau dari fetch Ikon Aplikasi di <head> ---
     window.ekoinSetLogoSplash = function(url){
       if(!url || elLogo.getAttribute('src') === url) return;
-      elLogo.onload = function(){ elLogo.style.display = 'block'; };
+      // Kotak putih (supaya logo berwarna tetap jelas di latar hijau) baru muncul setelah gambar benar-benar termuat.
+      elLogo.onload = function(){ document.getElementById('splashLogoBox').style.display = 'flex'; };
       elLogo.src = url;
     };
-    try{ window.ekoinSetLogoSplash(localStorage.getItem('ekoin_splash_logo')); }catch(e){}
+    try{ window.ekoinSetLogoSplash(localStorage.getItem('ekoin_splash_logo_org')); }catch(e){}
 
     // --- Progres persentase ---
     // Persentase "tampil" mengejar "target" dengan halus. Target naik mengikuti tahap nyata:
