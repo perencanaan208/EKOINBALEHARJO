@@ -14,6 +14,10 @@
   ikon di sini IKUT BERUBAH otomatis — TIDAK perlu commit/push apapun ke
   sini lagi.
 -->
+<!-- PERFORMA: buka koneksi ke server Google SEDINI MUNGKIN (sebelum iframe & fetch logo mulai) -> hemat ratusan ms. -->
+<link rel="preconnect" href="https://script.google.com" crossorigin>
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
+<link rel="dns-prefetch" href="https://www.gstatic.com">
 <link rel="icon" id="appFaviconLink" href="">
 <link rel="apple-touch-icon" id="appTouchIconLink" href="">
 <link rel="manifest" id="appManifestLink" href="">
@@ -124,7 +128,7 @@
     color:#fff;
     font-family:system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
     opacity:1; visibility:visible;
-    transition:opacity .35s ease, visibility .35s ease;
+    transition:opacity .25s ease, visibility .25s ease;
   }
   #wrapperSplash.hide{ opacity:0; visibility:hidden; pointer-events:none; }
   /* Logo UPZISNU (Ikon Aplikasi) menggantikan ikon koin/rumah bawaan. */
@@ -206,13 +210,14 @@
     var timerGambar = setInterval(function(){
       if(!siap && target < batasRayap) target += Math.max(0.15, (batasRayap - target) * 0.02); // merayap
       var selisih = target - tampil;
-      tampil += selisih > 0 ? Math.max(0.4, selisih * 0.12) : 0;
+      // Normal: mengejar target dengan halus. Begitu aplikasi SIAP, loncat cepat ke 100% (sebelumnya ~2 detik).
+      if(selisih > 0) tampil += siap ? Math.max(6, selisih * 0.5) : Math.max(0.6, selisih * 0.18);
       if(tampil > target) tampil = target;
       var bulat = Math.min(100, Math.round(tampil));
       elPersen.textContent = bulat + '%';
       elIsi.style.width = bulat + '%';
       elProg.setAttribute('aria-valuenow', String(bulat));
-      if(siap && bulat >= 100){ clearInterval(timerGambar); setTimeout(sembunyikanSplash, 250); }
+      if(siap && bulat >= 100){ clearInterval(timerGambar); setTimeout(sembunyikanSplash, 80); }
     }, 60);
 
     function sembunyikanSplash(){
