@@ -27,54 +27,48 @@
   // GANTI URL di sini juga kalau suatu saat deployment GAS dibuat versi/URL
   // baru (harus SAMA dengan src iframe di bawah).
   var GAS_URL = 'https://script.google.com/macros/s/AKfycbwxr2WZ9nHuXTELzNRDTPYQ57iST_Ts5ZO0AEFYNLP3RrCZsmOOMu9FrrLGAHjqu6y-/exec';
+  var KUNCI_IKON = 'ekoin_ikon_app';
 
-  // GET biasa (bukan POST) — dijamin tidak kena masalah CORS preflight sama
-  // sekali, karena GET tanpa header khusus dianggap "simple request" oleh
-  // browser. Endpoint ?rpc=getIkonAplikasi cuma mengembalikan JSON kecil
-  // berisi URL Ikon Aplikasi terbaru (bukan file gambar), lihat doGet di
-  // Code.gs. Endpoint ini sudah di-cache di sisi server (CacheService,
-  // 10 menit) supaya panggilan ini cepat & tidak ikut menahan munculnya
-  // splash "Selamat Datang" di bawah.
-  fetch(GAS_URL + '?rpc=getIkonAplikasi')
-    .then(function(r){ return r.json(); })
-    .then(function(res){
-      // Logo UPZISNU di splash = logo organisasi (yang sama dengan logo di bar atas kiri aplikasi), BUKAN Ikon
-      // Aplikasi. Disimpan di browser supaya pada kunjungan berikutnya logonya SUDAH tampil sejak detik pertama
-      // (tanpa menunggu fetch ini); lihat skrip splash di bawah. Dikerjakan SEBELUM cek ikon di bawah, karena
-      // logo tetap harus tampil walau Ikon Aplikasi custom belum pernah diupload.
-      var logo = res && res.success && res.data && res.data.logoUrl;
-      if(logo){
-        try{ localStorage.setItem('ekoin_splash_logo_org', logo); }catch(e){}
-        if(window.ekoinSetLogoSplash) window.ekoinSetLogoSplash(logo);
-      }
-      var url = res && res.success && res.data && res.data.iconUrl;
-      if(!url) return; // belum ada ikon custom diupload — biarkan ikon bawaan browser
+  // Ikon tab / Home Screen / manifest "Install". Ikon dari kunjungan sebelumnya dipasang SEKETIKA dari browser (tanpa
+  // menunggu jaringan); pembaruan dari server baru diminta SETELAH aplikasi di iframe selesai dimuat (lihat
+  // ekoinMuatIkon di bawah) supaya tidak berebut dengan pemuatan aplikasi utama.
+  function setIkon(url){
+    if(!url) return;
+    document.getElementById('appFaviconLink').setAttribute('href', url);
+    document.getElementById('appTouchIconLink').setAttribute('href', url);
+    // Web App Manifest dibuat dinamis lewat Blob URL (bukan file manifest.json terpisah).
+    var manifest = {
+      name: 'E-Koin UPZISNU Baleharjo',
+      short_name: 'E-Koin',
+      start_url: GAS_URL,
+      display: 'standalone',
+      background_color: '#0f5132',
+      theme_color: '#0f5132',
+      icons: [
+        { src: url, sizes: '192x192', type: 'image/png' },
+        { src: url, sizes: '512x512', type: 'image/png' }
+      ]
+    };
+    var blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+    document.getElementById('appManifestLink').setAttribute('href', URL.createObjectURL(blob));
+  }
+  try{ setIkon(localStorage.getItem(KUNCI_IKON)); }catch(e){}
 
-      document.getElementById('appFaviconLink').setAttribute('href', url);
-      document.getElementById('appTouchIconLink').setAttribute('href', url);
-
-      // Web App Manifest dibuat dinamis lewat Blob URL (bukan file
-      // manifest.json terpisah) — supaya ikon "Add to Home Screen"/"Install
-      // App" di Android Chrome & desktop Chrome ikut memakai ikon terbaru.
-      var manifest = {
-        name: 'E-Koin UPZISNU Baleharjo',
-        short_name: 'E-Koin',
-        start_url: GAS_URL,
-        display: 'standalone',
-        background_color: '#0f5132',
-        theme_color: '#0f5132',
-        icons: [
-          { src: url, sizes: '192x192', type: 'image/png' },
-          { src: url, sizes: '512x512', type: 'image/png' }
-        ]
-      };
-      var blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
-      document.getElementById('appManifestLink').setAttribute('href', URL.createObjectURL(blob));
-    })
-    .catch(function(){
-      // Diam-diam gagal (mis. offline) — biarkan ikon bawaan browser, jangan
-      // sampai mengganggu iframe utama di bawah yang tetap harus tampil.
-    });
+  var sudahMinta = false;
+  window.ekoinMuatIkon = function(){
+    if(sudahMinta) return;
+    sudahMinta = true;
+    // GET biasa (bukan POST) -- tidak kena CORS preflight. Endpoint ?rpc=getIkonAplikasi ringan & ter-cache di server.
+    fetch(GAS_URL + '?rpc=getIkonAplikasi')
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        var url = res && res.success && res.data && res.data.iconUrl;
+        if(!url) return; // belum ada ikon custom diupload — biarkan ikon bawaan browser
+        setIkon(url);
+        try{ localStorage.setItem(KUNCI_IKON, url); }catch(e){}
+      })
+      .catch(function(){ /* diam-diam gagal (mis. offline): ikon bawaan browser, jangan ganggu iframe utama */ });
+  };
 })();
 </script>
 <!--
@@ -233,6 +227,8 @@
     // Tahap: dokumen aplikasi (iframe) selesai dimuat.
     frame.addEventListener('load', function(){
       batasRayap = 78; naikkan(55); ket('Memuat data...');
+      // Baru sekarang (aplikasi sudah terunduh) pembaruan ikon diminta ke server; cadangan 8 detik di bawah.
+      if(window.ekoinMuatIkon) setTimeout(window.ekoinMuatIkon, 300);
       // Cadangan: aplikasi versi lama (belum mengirim sinyal "siap") jangan sampai menahan splash selamanya.
       setTimeout(tandaiSiap, 15000);
     });
@@ -242,8 +238,14 @@
       if(ev.source !== frame.contentWindow || !ev.data) return;
       if(ev.data.tipe === 'ekoin-progres'){ naikkan(Number(ev.data.persen) || 0); batasRayap = Math.max(batasRayap, 92); }
       else if(ev.data.tipe === 'ekoin-siap'){ tandaiSiap(); }
+      else if(ev.data.tipe === 'ekoin-logo' && typeof ev.data.src === 'string' && /^(data:image\/|https:\/\/)/.test(ev.data.src)){
+        // Logo organisasi dari aplikasi: tampil di splash & disimpan untuk kunjungan berikutnya (instan, tanpa server).
+        window.ekoinSetLogoSplash(ev.data.src);
+        try{ localStorage.setItem('ekoin_splash_logo_org', ev.data.src); }catch(e){}
+      }
     });
 
+    setTimeout(function(){ if(window.ekoinMuatIkon) window.ekoinMuatIkon(); }, 8000); // cadangan bila 'load' tak terpicu
     // Cadangan mutlak: apapun yang terjadi, splash tidak boleh menutupi aplikasi lebih dari 30 detik.
     setTimeout(function(){ tandaiSiap(); setTimeout(sembunyikanSplash, 600); }, 30000);
   })();
