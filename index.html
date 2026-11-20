@@ -149,7 +149,7 @@
   }
   #wrapperSplash .progres .isi{
     height:100%; width:0%; border-radius:99px; background:linear-gradient(90deg,#c9a227,#f1d46b);
-    transition:width .25s ease-out;
+    transition:none; /* digambar per frame oleh skrip (halus) */
   }
   #wrapperSplash .progres .ket{ margin-top:10px; font-size:12.5px; opacity:.8; }
 </style>
@@ -191,28 +191,44 @@
     };
     try{ window.ekoinSetLogoSplash(localStorage.getItem('ekoin_splash_logo_org')); }catch(e){}
 
-    // --- Progres persentase ---
-    // Persentase "tampil" mengejar "target" dengan halus. Target naik mengikuti tahap nyata:
-    //   halaman dibuka 8% -> aplikasi mulai dimuat 15% -> dokumen aplikasi selesai dimuat 55% ->
-    //   aplikasi minta data 80% -> data sudah tampil 100% (sinyal dari aplikasi).
-    // Di sela tahap, target merayap pelan sampai maksimal 92% supaya terlihat jalan walau server lambat.
-    var target = 8, tampil = 0, siap = false, batasRayap = 40;
-    function naikkan(n){ if(n > target) target = Math.min(100, n); }
+    // --- Progres persentase: MULUS dari 0 ke 100, tanpa berhenti di tengah ---
+    // Sebelumnya bilah naik per tahap dengan batas tertentu, sehingga "menempel" di ~40-46% (menunggu dokumen aplikasi)
+    // dan ~78% (menunggu data) lalu tiba-tiba lompat ke 100. Sekarang:
+    //  (1) kurva WAKTU yang terus naik tanpa pernah datar: cepat di awal (0 -> ~88% dalam beberapa detik), lalu merayap
+    //      pelan sampai maksimal 99% selama menunggu;
+    //  (2) tahap nyata hanya menaikkan "lantai" (dokumen aplikasi termuat >= 60%, aplikasi mulai >= 68%, minta data >= 84%)
+    //      sehingga bilah mempercepat diri, tidak pernah mundur;
+    //  (3) begitu aplikasi SIAP (data pertama tampil) bilah meluncur cepat ke 100% lalu splash hilang.
+    // Digambar per frame (requestAnimationFrame) dengan pergerakan minimum, jadi selalu bergerak halus.
+    var t0 = performance.now(), tLantai = t0, lantai = 10, tampil = 0, siap = false, selesai = false;
+    function naikkan(n){ if(n > lantai){ lantai = Math.min(99, n); tLantai = performance.now(); } }
     function ket(t){ elKet.textContent = t; }
-    naikkan(15);
-
-    var timerGambar = setInterval(function(){
-      if(!siap && target < batasRayap) target += Math.max(0.15, (batasRayap - target) * 0.02); // merayap
+    function targetWaktu(ms){
+      var d = ms / 1000;
+      var cepat = 88 * (1 - Math.exp(-d / 2.2));   // ~35% (1 dtk), ~53% (2 dtk), ~73% (4 dtk), ~83% (6 dtk)
+      var lambat = Math.min(11, d * 0.08);          // sesudahnya terus merayap pelan (tidak pernah diam) sampai 99%
+      return Math.min(99, cepat + lambat);
+    }
+    function gambar(now){
+      if(selesai) return;
+      // Di atas "lantai" bilah tetap merayap (2,5%/dtk, maks +8%) supaya tidak pernah diam menunggu tahap berikutnya.
+      var dtL = (now - tLantai) / 1000;
+      var dasar = lantai + Math.min(8, dtL * 2.5) + Math.max(0, dtL - 3.2) * 1.0; // sesudah +8% tetap merayap 1%/dtk (maks 99%)
+      var target = siap ? 100 : Math.min(99, Math.max(dasar, targetWaktu(now - t0)));
       var selisih = target - tampil;
-      // Normal: mengejar target dengan halus. Begitu aplikasi SIAP, loncat cepat ke 100% (sebelumnya ~2 detik).
-      if(selisih > 0) tampil += siap ? Math.max(6, selisih * 0.5) : Math.max(0.6, selisih * 0.18);
-      if(tampil > target) tampil = target;
-      var bulat = Math.min(100, Math.round(tampil));
+      if(selisih > 0){
+        tampil += Math.max(selisih * (siap ? 0.32 : 0.10), siap ? 0.9 : 0.06);
+        if(tampil > target) tampil = target;
+      }
+      var bulat = Math.min(100, Math.floor(tampil + 0.0001));
+      if(siap && tampil >= 99.5){ bulat = 100; tampil = 100; }
       elPersen.textContent = bulat + '%';
-      elIsi.style.width = bulat + '%';
+      elIsi.style.width = tampil.toFixed(2) + '%';
       elProg.setAttribute('aria-valuenow', String(bulat));
-      if(siap && bulat >= 100){ clearInterval(timerGambar); setTimeout(sembunyikanSplash, 80); }
-    }, 60);
+      if(siap && tampil >= 100){ selesai = true; setTimeout(sembunyikanSplash, 120); return; }
+      requestAnimationFrame(gambar);
+    }
+    requestAnimationFrame(gambar);
 
     function sembunyikanSplash(){
       if(sudahDisembunyikan) return;
@@ -221,12 +237,14 @@
     }
     function tandaiSiap(){
       if(siap) return;
-      siap = true; ket('Selesai'); naikkan(100);
+      siap = true; ket('Selesai');
+      // Jaring pengaman: tab di latar belakang menghentikan requestAnimationFrame -> splash tetap harus hilang.
+      setTimeout(function(){ selesai = true; elPersen.textContent = '100%'; elIsi.style.width = '100%'; sembunyikanSplash(); }, 1500);
     }
 
     // Tahap: dokumen aplikasi (iframe) selesai dimuat.
     frame.addEventListener('load', function(){
-      batasRayap = 78; naikkan(55); ket('Memuat data...');
+      naikkan(60); ket('Memuat data...');
       // Baru sekarang (aplikasi sudah terunduh) pembaruan ikon diminta ke server; cadangan 8 detik di bawah.
       if(window.ekoinMuatIkon) setTimeout(window.ekoinMuatIkon, 300);
       // Cadangan: aplikasi versi lama (belum mengirim sinyal "siap") jangan sampai menahan splash selamanya.
@@ -236,7 +254,7 @@
     // Sinyal dari aplikasi di dalam iframe (lihat siapKeWrapper_ / kirimProgresKeWrapper_ di Index.html GAS).
     window.addEventListener('message', function(ev){
       if(ev.source !== frame.contentWindow || !ev.data) return;
-      if(ev.data.tipe === 'ekoin-progres'){ naikkan(Number(ev.data.persen) || 0); batasRayap = Math.max(batasRayap, 92); }
+      if(ev.data.tipe === 'ekoin-progres'){ var pr = Number(ev.data.persen) || 0; naikkan(pr >= 80 ? 84 : pr >= 55 ? 68 : pr); if(pr >= 80) ket('Menyiapkan tampilan...'); }
       else if(ev.data.tipe === 'ekoin-siap'){ tandaiSiap(); }
       else if(ev.data.tipe === 'ekoin-logo' && typeof ev.data.src === 'string' && /^(data:image\/|https:\/\/)/.test(ev.data.src)){
         // Logo organisasi dari aplikasi: tampil di splash & disimpan untuk kunjungan berikutnya (instan, tanpa server).
